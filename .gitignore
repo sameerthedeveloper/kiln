@@ -5,3 +5,6 @@ src-tauri/gen/schemas
 .DS_Store
 .claude/settings.local.json
 .claude/
+*.p12
+*.cer
+*.pfx

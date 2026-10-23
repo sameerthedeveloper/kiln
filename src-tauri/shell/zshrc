@@ -1,0 +1,15 @@
+ZDOTDIR="${KILN_USER_ZDOTDIR:-$HOME}"
+[[ -f "$ZDOTDIR/.zshrc" ]] && source "$ZDOTDIR/.zshrc"
+
+# --- Kiln integration: OSC 133 block markers + cwd reporting ---
+__kiln_preexec() { printf '\e]133;C\a' }
+__kiln_precmd() {
+  local c=$?
+  printf '\e]133;D;%s\a' "$c"
+  printf '\e]1337;Cwd=%s\a' "$PWD"
+  PS1='' PS2='' RPS1='' RPROMPT='' PROMPT='' PROMPT_EOL_MARK=''
+  printf '\e]133;A\a'
+}
+unsetopt PROMPT_SP 2>/dev/null
+preexec_functions+=(__kiln_preexec)
+precmd_functions+=(__kiln_precmd)

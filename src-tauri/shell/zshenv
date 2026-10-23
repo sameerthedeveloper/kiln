@@ -1,0 +1,1 @@
+[[ -f "${KILN_USER_ZDOTDIR:-$HOME}/.zshenv" ]] && source "${KILN_USER_ZDOTDIR:-$HOME}/.zshenv"

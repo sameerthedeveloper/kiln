@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiln terminal</title>
+<meta name="description" content="Kiln is an open-source terminal where every command gets its own block. Output stays with the command that made it.">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1b1b19; --surface: #262623; --surface2: #34332f; --line: #a9a395; --fg: #d9d4c7; --dim: #8b8678;
+  --accent: #c8553a; --hi: #c9b27a; --ink: #120d0a; --ok: #7f9c5a; --err: #b8422e; --sh: #0b0b0a;
+  --rule: color-mix(in srgb, var(--line) 26%, transparent);
+  --mono: "Space Mono", ui-monospace, Menlo, monospace;
+  --head: "Archivo Black", Impact, "Arial Black", sans-serif;
+}
+* { box-sizing: border-box; border-radius: 0; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 var(--mono); }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.wrap { width: min(1100px, 100% - 32px); margin-inline: auto; }
+
+nav { border-bottom: 1px solid var(--rule); }
+nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.logo { font: 400 22px var(--head); letter-spacing: -.03em; text-decoration: none; }
+nav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; font-size: 14px; }
+nav a { text-decoration: none; } nav a:hover { color: var(--hi); }
+
+.hero { padding: 72px 0 80px; }
+.mark { margin: 0; font: 400 clamp(88px, 20vw, 240px)/.8 var(--head); letter-spacing: -.05em; }
+.mark span { display: inline-block; background: var(--hi); color: var(--ink); border: 3px solid var(--line); box-shadow: 10px 10px 0 var(--sh); padding: .06em .1em .1em; transform: rotate(-1.5deg); animation: slam .35s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes slam { from { transform: translate(-30px,-30px) rotate(-6deg); opacity: 0; } }
+.hero p.lead { max-width: 34ch; margin: 40px 0 28px; font: 700 clamp(20px, 3vw, 28px)/1.3 var(--mono); }
+.cta { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.btn { display: inline-block; padding: 12px 24px; font: 400 17px var(--head); text-decoration: none; border: 3px solid var(--line); box-shadow: 5px 5px 0 var(--sh); background: var(--surface); color: var(--fg); }
+.btn.primary { background: var(--accent); color: var(--ink); }
+.btn:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 var(--sh); }
+.btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--sh); }
+.cta small { color: var(--dim); font-size: 13px; }
+
+/* the demo: three command blocks */
+.demo { margin: 64px 0 0; background: var(--surface); border: 3px solid var(--line); box-shadow: 10px 10px 0 var(--sh); }
+.demo-bar { display: flex; gap: 0; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--dim); }
+.demo-bar span { padding: 8px 16px; border-right: 1px solid var(--rule); }
+.demo-bar span:first-child { color: var(--fg); box-shadow: inset 0 -3px 0 var(--accent); }
+.term { padding: 22px 22px 8px; font-size: 14px; }
+.blk { margin-bottom: 18px; }
+.bh { display: flex; align-items: stretch; background: var(--surface); border: 2px solid var(--line); box-shadow: 4px 4px 0 var(--sh); font-size: 13px; }
+.bh i { font-style: normal; width: 30px; display: grid; place-items: center; background: var(--ok); color: var(--ink); font-weight: 700; border-right: 2px solid var(--line); }
+.bh b { padding: 5px 12px; }
+.bh em { font-style: normal; margin-left: auto; padding: 5px 12px; color: var(--dim); }
+.bh.fail { background: var(--err); color: #f4e9e2; } .bh.fail i { background: var(--ink); color: #f4e9e2; } .bh.fail em { color: #f4e9e2; }
+.out { margin: 0; padding: 10px 0 0 14px; border-left: 6px solid var(--ok); margin-top: 8px; color: var(--fg); white-space: pre-wrap; }
+.out.err { border-left-color: var(--err); }
+.dim { color: var(--dim); }
+.prompt { display: flex; align-items: center; margin: 0 -22px; padding: 12px 22px; border-top: 1px solid var(--rule); background: var(--bg); }
+.prompt span { color: var(--accent); font-weight: 700; margin-right: 12px; }
+.caret { display: inline-block; width: 9px; height: 1.1em; background: var(--accent); margin-left: 2px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+section { padding: 72px 0; border-top: 1px solid var(--rule); }
+h2 { margin: 0 0 32px; font: 400 clamp(32px, 5vw, 52px)/1 var(--head); letter-spacing: -.03em; max-width: 18ch; }
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 0; border: 2px solid var(--line); }
+.features div { padding: 24px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.features h3 { margin: 0 0 8px; font: 400 20px var(--head); }
+.features p { margin: 0; color: var(--dim); font-size: 14px; }
+kbd { font: 700 12px var(--mono); background: var(--surface); border: 1px solid var(--rule); border-bottom-width: 3px; padding: 1px 7px; margin-right: 6px; }
+.keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px 40px; font-size: 14px; }
+
+.dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.card { display: flex; flex-direction: column; gap: 6px; padding: 20px; background: var(--surface); border: 3px solid var(--line); box-shadow: 5px 5px 0 var(--sh); text-decoration: none; }
+.card:hover { background: var(--hi); color: var(--ink); }
+.card.you { box-shadow: 7px 7px 0 var(--accent); }
+.card strong { font: 400 22px var(--head); }
+.card span { font-size: 13px; opacity: .7; }
+.note { margin-top: 28px; color: var(--dim); font-size: 14px; max-width: 60ch; }
+
+footer { border-top: 1px solid var(--rule); padding: 28px 0 48px; color: var(--dim); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; }
+
+@media (max-width: 560px) { nav ul { gap: 14px; } .hero { padding-top: 48px; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="logo" href="#">KILN</a>
+  <ul><li><a href="#features">Features</a></li><li><a href="#download">Download</a></li><li><a href="https://github.com/sameerthedeveloper/kiln">GitHub</a></li></ul>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <h1 class="mark"><span>KILN</span></h1>
+  <p class="lead">A terminal where every command gets its own block.</p>
+  <div class="cta">
+    <a class="btn primary" id="main-dl" href="#download">Download Kiln</a>
+    <small id="main-note">Free and open source</small>
+  </div>
+
+  <div class="demo" role="img" aria-label="Kiln showing three command blocks: a passing git status, a failing build, and a command prompt">
+    <div class="demo-bar"><span>kiln</span><span>api-server</span><span>docs</span></div>
+    <div class="term">
+      <div class="blk"><div class="bh"><i>✓</i><b>git status -sb</b><em>0.04s</em></div>
+<pre class="out">## main...origin/main
+ M src/routes/orders.ts</pre></div>
+      <div class="blk"><div class="bh fail"><i>✕</i><b>npm test</b><em>exit 1 · 2.8s</em></div>
+<pre class="out err">FAIL  src/routes/orders.test.ts
+  ✕ rejects an empty cart <span class="dim">(4 ms)</span></pre></div>
+      <div class="prompt"><span>›</span>npm test -- orders<i class="caret"></i></div>
+    </div>
+  </div>
+</div></header>
+
+<section id="features"><div class="wrap">
+  <h2>Output stays with the command that made it.</h2>
+  <div class="features">
+    <div><h3>Command blocks</h3><p>Each command gets a header with its exit status and run time. Copy, rerun, or jump between blocks.</p></div>
+    <div><h3>A real editor for input</h3><p>Syntax-highlighted, multi-line, with completion. Programs that need raw keys, like vim, get the whole terminal.</p></div>
+    <div><h3>Ask AI for a command</h3><p>Start a line with <kbd>#</kbd> and describe what you want. Kiln drafts the command for you. It needs your own API key in settings.</p></div>
+    <div><h3>Works with agents</h3><p>Run Claude Code, Codex or Gemini and Kiln hides its own input so they have the full window.</p></div>
+    <div><h3>Search history</h3><p>Fuzzy-find any past command, or start from a built-in workflow like undoing the last commit.</p></div>
+    <div><h3>Split panes and themes</h3><p>Split any direction. Five dark themes, adjustable font size.</p></div>
+  </div>
+  <div class="keys" style="margin-top:40px">
+    <div><kbd>⌘P</kbd>Command palette</div><div><kbd>⌃R</kbd>Search history</div>
+    <div><kbd>⌃⇧R</kbd>Workflows</div><div><kbd>⌘D</kbd>Split pane</div>
+    <div><kbd>⌘↑ ↓</kbd>Jump between blocks</div><div><kbd>#</kbd>Ask AI for a command</div>
+  </div>
+</div></section>
+
+<section id="download"><div class="wrap">
+  <h2>Download Kiln</h2>
+  <div class="dl">
+    <a class="card" data-os="mac" href="https://github.com/sameerthedeveloper/kiln/releases/latest"><strong>macOS</strong><span>.dmg · Apple silicon and Intel</span></a>
+    <a class="card" data-os="win" href="https://github.com/sameerthedeveloper/kiln/releases/latest"><strong>Windows</strong><span>.msi installer · PowerShell</span></a>
+    <a class="card" data-os="linux" href="https://github.com/sameerthedeveloper/kiln/releases/latest"><strong>Linux</strong><span>.AppImage or .deb · bash and zsh</span></a>
+  </div>
+  <p class="note">Builds are unsigned for now. On macOS, right-click the app and choose Open the first time. On Windows, choose More info, then Run anyway.</p>
+</div></section>
+
+<footer><div class="wrap">
+  <span>Kiln is open source.</span>
+  <a href="https://github.com/sameerthedeveloper/kiln">Source and releases on GitHub</a>
+</div></footer>
+
+<script>
+(function () {
+  var ua = navigator.userAgent, os = /Mac/.test(ua) ? 'mac' : /Win/.test(ua) ? 'win' : /Linux|X11/.test(ua) ? 'linux' : '';
+  var names = { mac: 'macOS', win: 'Windows', linux: 'Linux' };
+  var cards = document.querySelectorAll('[data-os]');
+  cards.forEach(function (c) { if (c.dataset.os === os) c.classList.add('you'); });
+  var btn = document.getElementById('main-dl'), note = document.getElementById('main-note');
+  if (os) { btn.textContent = 'Download for ' + names[os]; }
+  fetch('https://api.github.com/repos/sameerthedeveloper/kiln/releases/latest')
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+    .then(function (rel) {
+      var pick = {
+        mac: /\.dmg$/i, win: /\.msi$/i, linux: /\.(AppImage|deb)$/i
+      };
+      var found = {};
+      rel.assets.forEach(function (a) {
+        Object.keys(pick).forEach(function (k) {
+          if (pick[k].test(a.name) && !(k === 'mac' && /x64|x86_64/.test(a.name) && found.mac)) found[k] = found[k] || a.browser_download_url;
+        });
+      });
+      cards.forEach(function (c) { if (found[c.dataset.os]) c.href = found[c.dataset.os]; });
+      if (os && found[os]) { btn.href = found[os]; note.textContent = rel.tag_name + ' · free and open source'; }
+    })
+    .catch(function () {});
+})();
+</script>
+</body>
+</html>

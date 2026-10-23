@@ -1,0 +1,11 @@
+[[ -f "$HOME/.bash_profile" ]] && source "$HOME/.bash_profile" || { [[ -f "$HOME/.bashrc" ]] && source "$HOME/.bashrc"; }
+__kiln_precmd() {
+  local c=$?
+  printf '\e]133;D;%s\a' "$c"
+  printf '\e]1337;Cwd=%s\a' "$PWD"
+  printf '\e]133;A\a'
+  return $c
+}
+PS1='' PS2=''
+PS0=$'\e]133;C\a'
+PROMPT_COMMAND="__kiln_precmd${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
